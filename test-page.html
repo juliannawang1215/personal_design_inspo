@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspo Extension Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 20px;
+      background: #fafafa;
+      color: #111;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    p.subtitle {
+      color: #666;
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+    }
+    .card a {
+      text-decoration: none;
+      color: inherit;
+    }
+    .card img, .card video {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      display: block;
+    }
+    .card-body {
+      padding: 16px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.4;
+    }
+    .card-link {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #e11d48;
+      font-weight: 500;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      background: #f1f1f5;
+      color: #555;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Inspo Extension Test Showcase</h1>
+  <p class="subtitle">Hover over any card below. Notice that Inspo automatically detects the <b>exact individual post link</b> instead of just the main page URL!</p>
+
+  <div class="grid">
+    <!-- Post 1 (Wrapped in <a> tag like Pinterest/Dribbble) -->
+    <div class="card">
+      <a href="https://example.com/pin/987654321" target="_blank">
+        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExazlmdW5qczJ1Nm1ic3ptZDVrNmF0OWg1YmlubG83dGNuOG4wdG0zcyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3o7TKSjRrfIPjeiVyM/giphy.gif" alt="Retro Geometric Loop Artwork">
+        <div class="card-body">
+          <span class="tag">Post Link: /pin/987654321</span>
+          <div class="card-title">Retro Geometric Loop</div>
+          <div class="card-desc">Clicking Save will capture the direct pin URL rather than the feed URL!</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Post 2 (Nested individual link like Xiaohongshu/Instagram) -->
+    <div class="card">
+      <div class="cover-wrapper">
+        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80" alt="Abstract Fluid Wave 3D Render">
+      </div>
+      <div class="card-body">
+        <span class="tag">Post Link: /explore/65e9a01f</span>
+        <div class="card-title">Abstract Fluid Wave</div>
+        <div class="card-desc">Enclosing card has a direct detail link.</div>
+        <a href="https://example.com/explore/65e9a01f" class="card-link">View Original Post →</a>
+      </div>
+    </div>
+
+    <!-- Post 3 (Dribbble shot style) -->
+    <div class="card">
+      <a href="https://example.com/shots/1234567-Minimalist-Architecture" target="_blank">
+        <img src="https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop&q=80" alt="Brutalist Geometric Facade">
+        <div class="card-body">
+          <span class="tag">Post Link: /shots/1234567</span>
+          <div class="card-title">Geometric Architecture</div>
+          <div class="card-desc">Sharp lines and concrete brutalist details.</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

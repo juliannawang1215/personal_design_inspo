@@ -1,0 +1,227 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;590;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Linear Midnight Precision System - Shadow DOM Styles (DESIGN.md Compliant) */
+:host {
+  all: initial;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 2147483647;
+  font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "cv01" on, "ss03" on, "zero" on;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.inspo-overlay-container {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2147483647;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transform-origin: top right;
+  transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.inspo-overlay-container.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Linear Pill Button Spec: border-radius 9999px, weight 510, tight tracking, NO SHADOW */
+.inspo-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  background: #0f1011;
+  color: #d0d6e0;
+  font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv01" on, "ss03" on, "zero" on;
+  font-size: 12px;
+  font-weight: 510;
+  letter-spacing: -0.011em;
+  border-radius: 9999px;
+  border: 1px solid #23252a;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  transform: translateZ(0);
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.inspo-save-btn:hover {
+  background: #161718;
+  border-color: #383b3f;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.inspo-save-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Saved State: Linear Acid Lime Pill Button (Pure text, No Icon, No Shadow) */
+.inspo-save-btn.saved {
+  background: #e4f222;
+  border-color: #e4f222;
+  color: #08090a;
+  border-radius: 9999px;
+  animation: inspoBtnPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inspo-save-btn.saved:hover {
+  background: #ecf748;
+  border-color: #ecf748;
+  color: #08090a;
+  transform: translateY(-1px);
+}
+
+/* Note Popover with Adaptive Auto-Grow Height */
+.inspo-note-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  background: #161718;
+  border: 1px solid #23252a;
+  border-radius: 12px;
+  box-shadow: rgba(8, 9, 10, 0.8) 0px 14px 36px 0px, rgb(35, 37, 42) 0px 0px 0px 1px inset;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  transform-origin: top right;
+  pointer-events: none;
+  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.inspo-note-popover.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.inspo-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 510;
+  color: #8a8f98;
+  letter-spacing: -0.011em;
+}
+
+.inspo-popover-status {
+  display: flex;
+  align-items: center;
+  color: #e4f222;
+  font-family: 'Berkeley Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-feature-settings: "cv01" on, "ss03" on;
+  font-size: 11px;
+}
+
+/* Auto-growing adaptive textarea (No default scrollbar) */
+.inspo-note-input {
+  width: 100%;
+  min-height: 52px;
+  max-height: 280px;
+  padding: 8px 10px;
+  background: #08090a;
+  border: 1px solid #23252a;
+  border-radius: 6px;
+  color: #d0d6e0;
+  font-size: 13px;
+  line-height: 1.5;
+  font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv01" on, "ss03" on, "zero" on;
+  letter-spacing: -0.010em;
+  resize: none;
+  overflow: hidden; /* No scrollbar by default */
+  outline: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.inspo-note-input::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.inspo-note-input::placeholder {
+  color: #62666d;
+}
+
+.inspo-note-input:focus {
+  border-color: #8a8f98;
+  background: #0d0e10;
+}
+
+.inspo-popover-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* Linear Done Button (9999px Pill, weight 510, NO SHADOW) */
+.inspo-done-btn {
+  padding: 5px 14px;
+  background: #e4f222;
+  color: #08090a;
+  font-size: 12px;
+  font-weight: 510;
+  letter-spacing: -0.011em;
+  font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv01" on, "ss03" on, "zero" on;
+  border-radius: 9999px;
+  border: 1px solid #e4f222;
+  cursor: pointer;
+  outline: none;
+  transform: translateZ(0);
+  transition: background-color 0.12s ease, transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.inspo-done-btn:hover {
+  background: #ecf748;
+  transform: translateY(-0.5px);
+}
+
+.inspo-done-btn:active {
+  transform: scale(0.98);
+}
+
+/* Keyframes */
+@keyframes inspoBtnPop {
+  0% { transform: scale(0.94); }
+  60% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .inspo-overlay-container,
+  .inspo-note-popover,
+  .inspo-save-btn,
+  .inspo-done-btn {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    transform: none !important;
+  }
+}
