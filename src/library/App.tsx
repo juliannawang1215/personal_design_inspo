@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getAllVisuals, updateNote, deleteVisual } from '../storage/db';
-import { exportLibrary } from '../storage/exporter';
 import { importLibrary } from '../storage/importer';
 import type { VisualItem } from '../storage/types';
 import { Header } from './components/Header';
 import { VisualGrid } from './components/VisualGrid';
 import { DetailModal } from './components/DetailModal';
+import { ExportModal } from './components/ExportModal';
 import { EmptyState } from './components/EmptyState';
 
 export const App: React.FC = () => {
@@ -13,7 +13,7 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<VisualItem | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -98,21 +98,6 @@ export const App: React.FC = () => {
     setSelectedItem(null);
   };
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      const { count } = await exportLibrary();
-      setFeedback(`Exported ${count} references to ZIP`);
-      setTimeout(() => setFeedback(null), 3500);
-    } catch (err) {
-      console.error('[Inspo] Export error:', err);
-      setFeedback('Failed to export library.');
-      setTimeout(() => setFeedback(null), 3500);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const handleImport = async (file: File) => {
     setIsImporting(true);
     try {
@@ -137,8 +122,8 @@ export const App: React.FC = () => {
         onSearchChange={setSearchQuery}
         totalCount={visuals.length}
         filteredCount={filteredVisuals.length}
-        onExport={handleExport}
-        isExporting={isExporting}
+        onExport={() => setIsExportModalOpen(true)}
+        isExporting={false}
         onImport={handleImport}
         isImporting={isImporting}
       />
@@ -184,6 +169,21 @@ export const App: React.FC = () => {
           hasNext={selectedIndex < filteredVisuals.length - 1}
         />
       )}
+
+      {/* Export Options Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        visuals={visuals}
+        onSuccess={(msg) => {
+          setFeedback(msg);
+          setTimeout(() => setFeedback(null), 4000);
+        }}
+        onError={(err) => {
+          setFeedback(err);
+          setTimeout(() => setFeedback(null), 4000);
+        }}
+      />
     </div>
   );
 };

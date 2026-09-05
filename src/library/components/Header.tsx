@@ -41,7 +41,6 @@ export const Header: React.FC<HeaderProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       onImport(file);
-      // Reset input value so same file can be re-selected if needed
       e.target.value = '';
     }
   };
@@ -161,7 +160,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onExport}
             disabled={isExporting || totalCount === 0}
             className="inline-flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-[510] tracking-tight text-void bg-acid-lime hover:bg-[#ecf748] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] rounded-full transition-all duration-120 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-            title="Export full library as ZIP (images + metadata)"
+            title="Choose export options (Metadata, Standard, or Full Archive)"
           >
             {isExporting ? (
               <>
