@@ -9,12 +9,18 @@ async function checkAndInit() {
     return;
   }
 
+  let disabled = false;
   try {
-    const disabled = await isSiteDisabled(window.location.hostname);
-    if (disabled) {
-      return;
-    }
+    disabled = await isSiteDisabled(window.location.hostname);
+  } catch (err) {
+    console.warn('[Inspo] Failed to check disabled status, defaulting to enabled:', err);
+  }
 
+  if (disabled) {
+    return;
+  }
+
+  try {
     overlayInstance = new InspoOverlay();
   } catch (err) {
     console.error('[Inspo] Failed to initialize overlay:', err);
@@ -25,16 +31,20 @@ async function checkAndInit() {
 chrome.runtime.onMessage.addListener((message: { type?: string }) => {
   if (message && message.type === 'SETTINGS_UPDATED') {
     (async () => {
-      const disabled = await isSiteDisabled(window.location.hostname);
-      if (disabled) {
-        if (overlayInstance) {
-          overlayInstance.destroy();
-          overlayInstance = null;
+      try {
+        const disabled = await isSiteDisabled(window.location.hostname);
+        if (disabled) {
+          if (overlayInstance) {
+            overlayInstance.destroy();
+            overlayInstance = null;
+          }
+        } else {
+          if (!overlayInstance && !document.getElementById('inspo-shadow-host')) {
+            overlayInstance = new InspoOverlay();
+          }
         }
-      } else {
-        if (!overlayInstance && !document.getElementById('inspo-shadow-host')) {
-          overlayInstance = new InspoOverlay();
-        }
+      } catch (err) {
+        console.warn('[Inspo] Settings update listener error:', err);
       }
     })();
   }
