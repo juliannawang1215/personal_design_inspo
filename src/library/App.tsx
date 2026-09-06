@@ -6,6 +6,7 @@ import { Header } from './components/Header';
 import { VisualGrid } from './components/VisualGrid';
 import { DetailModal } from './components/DetailModal';
 import { ExportModal } from './components/ExportModal';
+import { SettingsModal } from './components/SettingsModal';
 import { EmptyState } from './components/EmptyState';
 
 export const App: React.FC = () => {
@@ -14,6 +15,7 @@ export const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<VisualItem | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -126,6 +128,7 @@ export const App: React.FC = () => {
         isExporting={false}
         onImport={handleImport}
         isImporting={isImporting}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
       />
 
       {/* Toast Notification with Slide-Up Motion */}
@@ -181,6 +184,16 @@ export const App: React.FC = () => {
         }}
         onError={(err) => {
           setFeedback(err);
+          setTimeout(() => setFeedback(null), 4000);
+        }}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onNotification={(msg) => {
+          setFeedback(msg);
           setTimeout(() => setFeedback(null), 4000);
         }}
       />

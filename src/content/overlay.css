@@ -94,7 +94,7 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  width: 280px;
+  width: 290px;
   background: #161718;
   border: 1px solid #23252a;
   border-radius: 12px;
@@ -134,6 +134,31 @@
   font-family: 'Berkeley Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-feature-settings: "cv01" on, "ss03" on;
   font-size: 11px;
+}
+
+/* Header options and disable site action */
+.inspo-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inspo-site-disable-btn {
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  font-size: 10px;
+  color: #62666d;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  transition: color 0.12s ease, background-color 0.12s ease;
+  font-family: inherit;
+}
+
+.inspo-site-disable-btn:hover {
+  color: #eb5757;
+  background: rgba(235, 87, 87, 0.08);
 }
 
 /* Auto-growing adaptive textarea (No default scrollbar) */
@@ -176,8 +201,15 @@
 
 .inspo-popover-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 6px;
+}
+
+.inspo-footer-hint {
+  font-size: 10px;
+  color: #62666d;
+  font-family: 'Berkeley Mono', 'JetBrains Mono', monospace;
 }
 
 /* Linear Done Button (9999px Pill, weight 510, NO SHADOW) */
@@ -207,6 +239,33 @@
   transform: scale(0.98);
 }
 
+/* Floating Toast when disabling */
+.inspo-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  background: #161718;
+  border: 1px solid #23252a;
+  color: #d0d6e0;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 510;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: rgba(8, 9, 10, 0.8) 0px 8px 24px 0px;
+  animation: inspoToastIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.inspo-toast-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #eb5757;
+}
+
 /* Keyframes */
 @keyframes inspoBtnPop {
   0% { transform: scale(0.94); }
@@ -214,12 +273,18 @@
   100% { transform: scale(1); }
 }
 
+@keyframes inspoToastIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .inspo-overlay-container,
   .inspo-note-popover,
   .inspo-save-btn,
-  .inspo-done-btn {
+  .inspo-done-btn,
+  .inspo-toast {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     transform: none !important;

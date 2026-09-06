@@ -16,6 +16,7 @@ export class InspoOverlay {
   private noteInput: HTMLTextAreaElement;
   private doneBtn: HTMLButtonElement;
   private statusText: HTMLSpanElement;
+  private disableSiteBtn: HTMLButtonElement;
 
   private currentVisualInfo: DetectedVisualInfo | null = null;
   private currentSavedId: string | null = null;
@@ -24,11 +25,23 @@ export class InspoOverlay {
   private isSaving = false;
   private hideTimeout: number | null = null;
   private isHoveringOverlay = false;
+  private isDestroyed = false;
 
   // Local cache of saved items for instant hover state
   private savedCache = new Map<string, { id: string; note?: string }>();
 
+  // Event handler references for clean removal
+  private handleMouseOverBound: (e: MouseEvent) => void;
+  private handleMouseMoveBound: (e: MouseEvent) => void;
+  private handleClickOutsideBound: (e: MouseEvent) => void;
+  private handleScrollBound: () => void;
+
   constructor() {
+    this.handleMouseOverBound = this.handleMouseOver.bind(this);
+    this.handleMouseMoveBound = this.handleMouseMove.bind(this);
+    this.handleClickOutsideBound = this.handleClickOutside.bind(this);
+    this.handleScrollBound = this.handleScroll.bind(this);
+
     // 1. Create Shadow Host on root documentElement
     this.shadowHost = document.createElement('div');
     this.shadowHost.id = 'inspo-shadow-host';
@@ -43,7 +56,7 @@ export class InspoOverlay {
     this.container = document.createElement('div');
     this.container.className = 'inspo-overlay-container';
 
-    // Save Button (Linear 6px radius, pure typography)
+    // Save Button (Linear Pill 9999px radius, pure typography)
     this.saveBtn = document.createElement('button');
     this.saveBtn.className = 'inspo-save-btn';
     this.saveBtn.setAttribute('type', 'button');
@@ -60,9 +73,13 @@ export class InspoOverlay {
         <span class="inspo-popover-status">
           <span class="inspo-status-label">Saved</span>
         </span>
+        <div class="inspo-header-actions">
+          <button type="button" class="inspo-site-disable-btn" title="Don't show Inspo on this website">Disable on site</button>
+        </div>
       </div>
       <textarea class="inspo-note-input" placeholder="Add a note... (Cmd+Enter to save)" rows="2" aria-label="Reference note"></textarea>
       <div class="inspo-popover-footer">
+        <span class="inspo-footer-hint">Cmd+Enter to save</span>
         <button type="button" class="inspo-done-btn" aria-label="Done">Done</button>
       </div>
     `;
@@ -70,6 +87,7 @@ export class InspoOverlay {
     this.noteInput = this.popover.querySelector('.inspo-note-input') as HTMLTextAreaElement;
     this.doneBtn = this.popover.querySelector('.inspo-done-btn') as HTMLButtonElement;
     this.statusText = this.popover.querySelector('.inspo-status-label') as HTMLSpanElement;
+    this.disableSiteBtn = this.popover.querySelector('.inspo-site-disable-btn') as HTMLButtonElement;
 
     this.container.appendChild(this.saveBtn);
     this.container.appendChild(this.popover);
@@ -84,8 +102,9 @@ export class InspoOverlay {
 
   private initEvents() {
     // Mouse over/move delegation
-    document.addEventListener('mouseover', this.handleMouseOver, { passive: true });
-    document.addEventListener('mousemove', this.handleMouseMove, { passive: true });
+    document.addEventListener('mouseover', this.handleMouseOverBound, { passive: true });
+    document.addEventListener('mousemove', this.handleMouseMoveBound, { passive: true });
+    window.addEventListener('scroll', this.handleScrollBound, { passive: true });
 
     // Track overlay hover
     this.container.addEventListener('mouseenter', () => {
@@ -129,121 +148,169 @@ export class InspoOverlay {
       this.saveNoteAndClose();
     });
 
-    // Dismiss on click outside
-    document.addEventListener(
-      'click',
-      (e) => {
-        if (this.isPopoverOpen) {
-          const path = e.composedPath();
-          if (!path.includes(this.container) && !path.includes(this.shadowHost)) {
-            this.saveNoteAndClose();
-          }
-        }
-      },
-      { capture: true }
-    );
-
-    // Handle Escape key globally
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.isPopoverOpen) {
-        this.closePopover();
-      }
+    // Disable on this site button click
+    this.disableSiteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.handleDisableSite();
     });
 
-    // Update position on scroll and resize
-    window.addEventListener('scroll', this.updatePosition, { passive: true });
-    window.addEventListener('resize', this.updatePosition, { passive: true });
+    // Dismiss on click outside
+    document.addEventListener('click', this.handleClickOutsideBound, true);
   }
 
-  private handleMouseOver = (e: MouseEvent) => {
-    if (this.isPopoverOpen || this.isHoveringOverlay) return;
-
-    const el = findTargetVisualElement(e.target, e.clientX, e.clientY);
-    if (el && isValidVisualElement(el)) {
-      this.cancelHide();
-      this.showForElement(el);
-    }
-  };
-
-  private handleMouseMove = (e: MouseEvent) => {
-    if (this.isPopoverOpen || this.isHoveringOverlay) return;
-
-    if (this.currentVisualInfo) {
-      const el = this.currentVisualInfo.element;
-      if (!el.isConnected) {
-        this.hide();
-        return;
+  private handleClickOutside(e: MouseEvent) {
+    if (this.isPopoverOpen) {
+      const path = e.composedPath();
+      if (!path.includes(this.container) && !path.includes(this.shadowHost)) {
+        this.saveNoteAndClose();
       }
+    }
+  }
 
-      const rect = el.getBoundingClientRect();
-      const pad = 40;
-      const inside =
-        e.clientX >= rect.left - pad &&
-        e.clientX <= rect.right + pad &&
-        e.clientY >= rect.top - pad &&
-        e.clientY <= rect.bottom + pad;
+  private handleScroll() {
+    if (this.currentVisualInfo && !this.isPopoverOpen) {
+      this.updatePosition();
+    }
+  }
 
-      if (!inside) {
-        this.scheduleHide(200);
+  /**
+   * Disable Inspo on current domain permanently
+   */
+  private async handleDisableSite() {
+    const domain = window.location.hostname;
+    this.closePopover();
+    this.hideOverlay();
+
+    // Show stylish transient toast
+    const toast = document.createElement('div');
+    toast.className = 'inspo-toast';
+    toast.innerHTML = `
+      <span class="inspo-toast-dot"></span>
+      <span>Inspo disabled on ${domain}</span>
+    `;
+    this.shadowRoot.appendChild(toast);
+
+    try {
+      await this.sendMessage({
+        type: 'DISABLE_SITE',
+        payload: { domain },
+      });
+    } catch (err) {
+      console.warn('[Inspo] Failed to save disabled site setting:', err);
+    }
+
+    setTimeout(() => {
+      this.destroy();
+    }, 1800);
+  }
+
+  /**
+   * Destroy and clean up this overlay completely
+   */
+  public destroy() {
+    if (this.isDestroyed) return;
+    this.isDestroyed = true;
+
+    // Remove event listeners
+    document.removeEventListener('mouseover', this.handleMouseOverBound);
+    document.removeEventListener('mousemove', this.handleMouseMoveBound);
+    window.removeEventListener('scroll', this.handleScrollBound);
+    document.removeEventListener('click', this.handleClickOutsideBound, true);
+
+    if (this.hideTimeout) {
+      window.clearTimeout(this.hideTimeout);
+    }
+
+    // Remove DOM
+    try {
+      this.shadowHost.remove();
+    } catch {
+      // ignore
+    }
+  }
+
+  private handleMouseOver(e: MouseEvent) {
+    if (this.isPopoverOpen || this.isHoveringOverlay || this.isDestroyed) return;
+
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    // Ignore events originating from our own shadow DOM
+    if (target === this.shadowHost || this.shadowHost.contains(target)) return;
+
+    const visualEl = findTargetVisualElement(target);
+    if (!visualEl || !isValidVisualElement(visualEl)) return;
+
+    this.showForElement(visualEl);
+  }
+
+  private handleMouseMove(e: MouseEvent) {
+    if (this.isPopoverOpen || this.isHoveringOverlay || this.isDestroyed) return;
+
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    if (target === this.shadowHost || this.shadowHost.contains(target)) return;
+
+    const visualEl = findTargetVisualElement(target);
+    if (visualEl && isValidVisualElement(visualEl)) {
+      if (this.currentVisualInfo?.element !== visualEl) {
+        this.showForElement(visualEl);
       } else {
         this.cancelHide();
       }
-    } else {
-      const el = findTargetVisualElement(e.target, e.clientX, e.clientY);
-      if (el && isValidVisualElement(el)) {
-        this.cancelHide();
-        this.showForElement(el);
-      }
+    } else if (this.currentVisualInfo) {
+      this.scheduleHide(150);
     }
-  };
+  }
 
-  private showForElement(el: HTMLElement) {
-    if (this.currentVisualInfo?.element === el && this.container.classList.contains('visible')) {
-      return;
-    }
+  private async showForElement(el: HTMLElement) {
+    this.cancelHide();
 
-    this.currentVisualInfo = getDetectedVisualInfo(el);
-    this.currentSavedId = null;
-    this.currentNote = '';
+    const info = getDetectedVisualInfo(el);
+    if (!info) return;
+
+    this.currentVisualInfo = info;
     this.updatePosition();
 
-    // Check if item is already saved
-    const cacheKey = `${this.currentVisualInfo.src}::${this.currentVisualInfo.sourceUrl}`;
+    // Check saved state instantly from cache or background
+    const cacheKey = `${info.src}::${info.sourceUrl}`;
     const cached = this.savedCache.get(cacheKey);
 
     if (cached) {
-      this.currentSavedId = cached.id;
-      this.currentNote = cached.note || '';
-      this.renderSavedUI();
+      this.setSavedState(true, cached.id, cached.note);
     } else {
-      this.resetButtonUI();
-      // Check asynchronously from IndexedDB
-      this.checkSavedStatus(this.currentVisualInfo.src, this.currentVisualInfo.sourceUrl);
+      this.setSavedState(false);
+      // Query service worker for duplicate
+      this.checkDuplicateStatus(info);
     }
 
     this.container.classList.add('visible');
   }
 
-  private async checkSavedStatus(imageUrl: string, sourceUrl: string) {
+  private async checkDuplicateStatus(info: DetectedVisualInfo) {
     try {
       const res = await this.sendMessage<{ isDuplicate: boolean; item?: VisualItem }>({
         type: 'CHECK_DUPLICATE',
-        payload: { imageUrl, sourceUrl },
+        payload: {
+          imageUrl: info.src,
+          sourceUrl: info.sourceUrl,
+        },
       });
 
-      if (res && res.success && res.data?.isDuplicate && res.data.item) {
-        const item = res.data.item;
-        const cacheKey = `${imageUrl}::${sourceUrl}`;
-        this.savedCache.set(cacheKey, { id: item.id, note: item.note });
-
-        if (
-          this.currentVisualInfo &&
-          this.currentVisualInfo.src === imageUrl &&
-          this.currentVisualInfo.sourceUrl === sourceUrl
-        ) {
-          this.currentSavedId = item.id;
-          this.currentNote = item.note || '';
-          this.renderSavedUI();
+      if (
+        this.currentVisualInfo &&
+        this.currentVisualInfo.src === info.src &&
+        this.currentVisualInfo.sourceUrl === info.sourceUrl
+      ) {
+        if (res.success && res.data?.isDuplicate && res.data.item) {
+          const item = res.data.item;
+          this.savedCache.set(`${info.src}::${info.sourceUrl}`, {
+            id: item.id,
+            note: item.note,
+          });
+          this.setSavedState(true, item.id, item.note);
         }
       }
     } catch {
@@ -251,143 +318,103 @@ export class InspoOverlay {
     }
   }
 
-  private updatePosition = () => {
-    if (!this.currentVisualInfo || !this.currentVisualInfo.element.isConnected) {
-      if (!this.isPopoverOpen) this.hide();
-      return;
-    }
+  private updatePosition() {
+    if (!this.currentVisualInfo || this.isDestroyed) return;
 
     const rect = this.currentVisualInfo.element.getBoundingClientRect();
-    if (rect.width < 30 || rect.height < 30 || rect.bottom < 0 || rect.top > window.innerHeight) {
-      if (!this.isPopoverOpen) this.hide();
+    if (rect.width === 0 || rect.height === 0) {
+      this.hideOverlay();
       return;
     }
 
-    // Viewport-safe clamping for Save button
-    const safeTop = Math.max(10, Math.min(rect.top + 8, window.innerHeight - 44));
-    const safeRight = Math.max(10, Math.min(window.innerWidth - rect.right + 8, window.innerWidth - 90));
+    const padding = 12;
+    const top = rect.top + padding;
+    const right = window.innerWidth - rect.right + padding;
 
-    this.container.style.top = `${safeTop}px`;
-    this.container.style.right = `${safeRight}px`;
-    this.container.style.left = 'auto';
+    this.container.style.top = `${Math.max(10, top)}px`;
+    this.container.style.right = `${Math.max(10, right)}px`;
+  }
 
-    // Auto flip popover if near bottom of viewport
-    if (safeTop + 160 > window.innerHeight) {
-      this.popover.style.top = 'auto';
-      this.popover.style.bottom = 'calc(100% + 6px)';
-      this.popover.style.transformOrigin = 'bottom right';
+  private setSavedState(isSaved: boolean, id?: string, note?: string) {
+    if (isSaved) {
+      this.saveBtn.classList.add('saved');
+      this.saveBtn.innerHTML = `<span class="inspo-btn-label">Saved</span>`;
+      this.currentSavedId = id || this.currentSavedId;
+      this.currentNote = note || '';
     } else {
-      this.popover.style.top = 'calc(100% + 6px)';
-      this.popover.style.bottom = 'auto';
-      this.popover.style.transformOrigin = 'top right';
+      this.saveBtn.classList.remove('saved');
+      this.saveBtn.innerHTML = `<span class="inspo-btn-label">Save</span>`;
+      this.currentSavedId = null;
+      this.currentNote = '';
     }
-  };
-
-  private scheduleHide(delay: number) {
-    if (this.hideTimeout) clearTimeout(this.hideTimeout);
-    this.hideTimeout = window.setTimeout(() => {
-      if (!this.isHoveringOverlay && !this.isPopoverOpen) {
-        this.hide();
-      }
-    }, delay);
-  }
-
-  private cancelHide() {
-    if (this.hideTimeout) {
-      clearTimeout(this.hideTimeout);
-      this.hideTimeout = null;
-    }
-  }
-
-  private hide() {
-    this.cancelHide();
-    this.container.classList.remove('visible');
-    this.closePopover();
-    this.currentVisualInfo = null;
-  }
-
-  private resetButtonUI() {
-    this.saveBtn.className = 'inspo-save-btn';
-    this.saveBtn.setAttribute('aria-label', 'Save to Inspo');
-    this.saveBtn.innerHTML = `<span class="inspo-btn-label">Save</span>`;
-    this.statusText.textContent = 'Saved';
-  }
-
-  private renderSavedUI() {
-    this.saveBtn.className = 'inspo-save-btn saved';
-    this.saveBtn.setAttribute('aria-label', 'Saved in Inspo');
-    // Pure text without any icon
-    this.saveBtn.innerHTML = `<span class="inspo-btn-label">Saved</span>`;
-    this.statusText.textContent = 'Saved';
-  }
-
-  private extractElementDataUrl(el: HTMLElement): string | undefined {
-    try {
-      if (el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0) {
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.min(el.naturalWidth, 1920);
-        canvas.height = Math.min(el.naturalHeight, 1920);
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
-          return canvas.toDataURL(el.src.includes('.png') ? 'image/png' : 'image/jpeg', 0.92);
-        }
-      }
-    } catch {
-      // Cross-origin canvas taint will fallback to direct fetch in worker
-    }
-    return undefined;
   }
 
   private async handleSaveClick() {
-    if (!this.currentVisualInfo || this.isSaving) return;
+    if (!this.currentVisualInfo || this.isSaving || this.isDestroyed) return;
 
-    // If already saved, open note popover directly
+    // If already saved, clicking opens note editor directly
     if (this.currentSavedId) {
-      this.renderSavedUI();
       this.openPopover(this.currentNote);
       return;
     }
 
     this.isSaving = true;
+    this.saveBtn.innerHTML = `<span class="inspo-btn-label">Saving...</span>`;
 
-    // Immediate visual feedback
-    this.renderSavedUI();
-    this.openPopover('');
+    const info = this.currentVisualInfo;
 
-    const fallbackDataUrl = this.extractElementDataUrl(this.currentVisualInfo.element);
+    // In-page fallback snapshot data URL if needed
+    let fallbackDataUrl: string | undefined;
+    if (info.element instanceof HTMLImageElement && info.element.complete && info.element.naturalWidth > 0) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = info.element.naturalWidth;
+        canvas.height = info.element.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(info.element, 0, 0);
+          fallbackDataUrl = canvas.toDataURL('image/png');
+        }
+      } catch {
+        // ignore cross-origin taint
+      }
+    }
 
     const payload: SaveVisualPayload = {
-      imageUrl: this.currentVisualInfo.src,
+      imageUrl: info.src,
+      sourceUrl: info.sourceUrl,
+      sourceTitle: info.sourceTitle || document.title,
+      width: info.width,
+      height: info.height,
       dataUrl: fallbackDataUrl,
-      mediaType: this.currentVisualInfo.mediaType,
-      sourceUrl: this.currentVisualInfo.sourceUrl,
-      sourceTitle: this.currentVisualInfo.sourceTitle,
-      width: this.currentVisualInfo.width,
-      height: this.currentVisualInfo.height,
     };
 
     try {
-      const response = await this.sendMessage<{ item: { id: string; note?: string }; isDuplicate: boolean }>({
+      const res = await this.sendMessage<{ item: VisualItem; isDuplicate: boolean }>({
         type: 'SAVE_VISUAL',
         payload,
       });
 
-      if (response && response.success && response.data) {
-        const { item } = response.data;
-        this.currentSavedId = item.id;
-        this.currentNote = item.note || '';
+      if (res.success && res.data) {
+        const item = res.data.item;
+        this.setSavedState(true, item.id, item.note);
 
-        // Add to local cache
-        if (this.currentVisualInfo) {
-          const cacheKey = `${this.currentVisualInfo.src}::${this.currentVisualInfo.sourceUrl}`;
-          this.savedCache.set(cacheKey, { id: item.id, note: this.currentNote });
-        }
+        const cacheKey = `${info.src}::${info.sourceUrl}`;
+        this.savedCache.set(cacheKey, { id: item.id, note: item.note });
+
+        this.openPopover(item.note || '');
       } else {
-        console.warn('[Inspo] Save response unsuccessful:', response?.error);
+        this.saveBtn.innerHTML = `<span class="inspo-btn-label">Error</span>`;
+        setTimeout(() => {
+          this.setSavedState(false);
+        }, 1200);
       }
     } catch (err) {
-      console.error('[Inspo] Failed to save visual:', err);
+      console.error('[Inspo] Save failed:', err);
+      this.saveBtn.innerHTML = `<span class="inspo-btn-label">Error</span>`;
+      setTimeout(() => {
+        this.setSavedState(false);
+      }, 1200);
     } finally {
       this.isSaving = false;
     }
@@ -441,6 +468,26 @@ export class InspoOverlay {
     }
     this.closePopover();
     this.scheduleHide(800);
+  }
+
+  private scheduleHide(delayMs = 200) {
+    this.cancelHide();
+    this.hideTimeout = window.setTimeout(() => {
+      this.hideOverlay();
+    }, delayMs);
+  }
+
+  private cancelHide() {
+    if (this.hideTimeout !== null) {
+      window.clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
+  }
+
+  private hideOverlay() {
+    if (this.isPopoverOpen || this.isHoveringOverlay || this.isDestroyed) return;
+    this.container.classList.remove('visible');
+    this.currentVisualInfo = null;
   }
 
   private sendMessage<T>(message: MessageRequest): Promise<MessageResponse<T>> {

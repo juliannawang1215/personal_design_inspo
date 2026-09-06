@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Search, Download, Upload, X, Loader2 } from 'lucide-react';
+import { Search, Download, Upload, Settings as SettingsIcon, X, Loader2 } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -10,6 +10,7 @@ interface HeaderProps {
   isExporting: boolean;
   onImport: (file: File) => void;
   isImporting: boolean;
+  onOpenSettings: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   isExporting,
   onImport,
   isImporting,
+  onOpenSettings,
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +81,15 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Actions on mobile — Pill buttons (rounded-full) */}
-          <div className="flex sm:hidden items-center gap-2">
+          <div className="flex sm:hidden items-center gap-1.5">
+            <button
+              onClick={onOpenSettings}
+              className="p-1.5 text-fog hover:text-mist bg-carbon hover:bg-obsidian border border-graphite rounded-full active:scale-95 transition-all duration-120"
+              title="Settings"
+            >
+              <SettingsIcon className="w-3.5 h-3.5" />
+            </button>
+
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isImporting}
@@ -133,8 +143,18 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Desktop Actions (Import Ghost Pill + Export Acid Lime Pill) */}
+        {/* Desktop Actions (Settings Ghost + Import Ghost + Export Acid Lime Pill) */}
         <div className="hidden sm:flex items-center gap-2.5">
+          {/* Settings Button */}
+          <button
+            onClick={onOpenSettings}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-[510] tracking-tight text-fog hover:text-mist bg-obsidian hover:bg-carbon border border-graphite hover:border-smoke hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] rounded-full transition-all duration-120 cursor-pointer"
+            title="Manage disabled websites & settings"
+          >
+            <SettingsIcon className="w-3.5 h-3.5" />
+            <span>Settings</span>
+          </button>
+
           {/* Import Backup Button */}
           <button
             onClick={() => fileInputRef.current?.click()}
