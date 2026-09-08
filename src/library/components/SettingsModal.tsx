@@ -4,9 +4,11 @@ import {
   addDisabledDomain,
   removeDisabledDomain,
   setGlobalPause,
+  setSoundEnabled,
   normalizeDomain,
 } from '../../storage/settings';
 import type { InspoSettings } from '../../storage/types';
+import { playHapticSound, SoundPresets } from '../../utils/sound';
 import {
   X,
   Globe,
@@ -14,6 +16,8 @@ import {
   Trash2,
   PauseCircle,
   PlayCircle,
+  Volume2,
+  VolumeX,
   Search,
   Check,
   ShieldAlert,
@@ -34,6 +38,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [settings, setSettings] = useState<InspoSettings>({
     disabledDomains: [],
     isGloballyPaused: false,
+    soundEnabled: true,
   });
   const [newDomainInput, setNewDomainInput] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
@@ -75,10 +80,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const nextState = !settings.isGloballyPaused;
     const updated = await setGlobalPause(nextState);
     setSettings(updated);
+    playHapticSound(SoundPresets.clickTap);
     onNotification?.(
       nextState
         ? 'Inspo capture paused globally on all websites.'
         : 'Inspo capture resumed on active websites.'
+    );
+  };
+
+  const handleToggleSound = async () => {
+    const nextState = !settings.soundEnabled;
+    const updated = await setSoundEnabled(nextState);
+    setSettings(updated);
+    if (nextState) {
+      playHapticSound(SoundPresets.savePop);
+    }
+    onNotification?.(
+      nextState
+        ? 'Acoustic UI sound effects enabled.'
+        : 'Acoustic UI sound effects muted.'
     );
   };
 
@@ -96,12 +116,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const updated = await addDisabledDomain(domain);
     setSettings(updated);
     setNewDomainInput('');
+    playHapticSound(SoundPresets.clickTap);
     onNotification?.(`Inspo disabled on ${domain}`);
   };
 
   const handleRemoveDomain = async (domain: string) => {
     const updated = await removeDisabledDomain(domain);
     setSettings(updated);
+    playHapticSound(SoundPresets.noteSaved);
     onNotification?.(`Inspo re-enabled on ${domain}`);
   };
 
@@ -131,7 +153,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 Extension Settings
               </h2>
               <p className="text-xs text-fog mt-0.5">
-                Manage site exclusions and capture preferences
+                Manage site exclusions, sound effects, and preferences
               </p>
             </div>
           </div>
@@ -146,7 +168,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto space-y-5 pr-1" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1" style={{ scrollbarWidth: 'none' }}>
           {/* Section 1: Global Pause Mode */}
           <div className="p-4 rounded-[10px] bg-carbon border border-graphite flex items-center justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -196,7 +218,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
 
-          {/* Section 2: Disabled Websites (Blacklist) */}
+          {/* Section 2: Acoustic Sound Feedback Toggle */}
+          <div className="p-4 rounded-[10px] bg-carbon border border-graphite flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div
+                className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                  settings.soundEnabled
+                    ? 'bg-acid-lime/10 border-acid-lime/30 text-acid-lime'
+                    : 'bg-void border-graphite text-fog'
+                }`}
+              >
+                {settings.soundEnabled ? (
+                  <Volume2 className="w-4 h-4" />
+                ) : (
+                  <VolumeX className="w-4 h-4 text-ash" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-[510] text-paper">
+                    Acoustic Haptic Feedback
+                  </span>
+                  <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-[4px] bg-white/[0.04] border border-graphite text-fog">
+                    Web Audio
+                  </span>
+                </div>
+                <p className="text-xs text-fog mt-0.5 leading-relaxed">
+                  Play subtle, tactile micro-sound feedback on save, note updates, and library actions.
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle Switch */}
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 ease-in-out focus:outline-none ${
+                settings.soundEnabled ? 'bg-acid-lime' : 'bg-smoke'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-void shadow-sm ring-0 transition duration-150 ease-in-out ${
+                  settings.soundEnabled ? 'translate-x-4' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Section 3: Disabled Websites (Blacklist) */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -249,7 +318,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
 
             {/* Disabled Domain List */}
-            <div className="rounded-[10px] border border-graphite bg-void/50 overflow-hidden divide-y divide-graphite/60 max-h-56 overflow-y-auto">
+            <div className="rounded-[10px] border border-graphite bg-void/50 overflow-hidden divide-y divide-graphite/60 max-h-52 overflow-y-auto">
               {loading ? (
                 <div className="p-4 text-center text-xs text-fog">Loading settings...</div>
               ) : filteredDomains.length > 0 ? (

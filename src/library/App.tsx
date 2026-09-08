@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getAllVisuals, updateNote, deleteVisual } from '../storage/db';
 import { importLibrary } from '../storage/importer';
 import type { VisualItem } from '../storage/types';
+import { playHapticSound, SoundPresets } from '../utils/sound';
 import { Header } from './components/Header';
 import { VisualGrid } from './components/VisualGrid';
 import { DetailModal } from './components/DetailModal';
@@ -86,6 +87,7 @@ export const App: React.FC = () => {
 
   const handleUpdateNote = async (id: string, newNote: string) => {
     await updateNote(id, newNote);
+    playHapticSound(SoundPresets.noteSaved);
     setVisuals((prev) =>
       prev.map((item) => (item.id === id ? { ...item, note: newNote } : item))
     );
@@ -95,6 +97,7 @@ export const App: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    playHapticSound(SoundPresets.deletePop);
     await deleteVisual(id);
     setVisuals((prev) => prev.filter((item) => item.id !== id));
     setSelectedItem(null);
@@ -105,6 +108,7 @@ export const App: React.FC = () => {
     try {
       const result = await importLibrary(file);
       await loadData();
+      playHapticSound(SoundPresets.exportSuccess);
       setFeedback(`Restored ${result.importedCount} references from backup`);
       setTimeout(() => setFeedback(null), 4000);
     } catch (err) {
@@ -179,6 +183,7 @@ export const App: React.FC = () => {
         onClose={() => setIsExportModalOpen(false)}
         visuals={visuals}
         onSuccess={(msg) => {
+          playHapticSound(SoundPresets.exportSuccess);
           setFeedback(msg);
           setTimeout(() => setFeedback(null), 4000);
         }}

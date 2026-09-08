@@ -39,6 +39,7 @@ export type SaveVisualPayload = {
 export interface InspoSettings {
   disabledDomains: string[];
   isGloballyPaused: boolean;
+  soundEnabled: boolean;
 }
 
 export type MessageRequest =

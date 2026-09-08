@@ -5,6 +5,7 @@ const SETTINGS_STORAGE_KEY = 'inspo_user_settings';
 export const DEFAULT_SETTINGS: InspoSettings = {
   disabledDomains: [],
   isGloballyPaused: false,
+  soundEnabled: true,
 };
 
 /**
@@ -147,6 +148,20 @@ export async function setGlobalPause(paused: boolean): Promise<InspoSettings> {
   const updated: InspoSettings = {
     ...current,
     isGloballyPaused: paused,
+  };
+
+  await saveSettings(updated);
+  return updated;
+}
+
+/**
+ * Toggle or set acoustic sound feedback state
+ */
+export async function setSoundEnabled(enabled: boolean): Promise<InspoSettings> {
+  const current = await getSettings();
+  const updated: InspoSettings = {
+    ...current,
+    soundEnabled: enabled,
   };
 
   await saveSettings(updated);

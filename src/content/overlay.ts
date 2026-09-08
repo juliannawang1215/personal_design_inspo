@@ -6,6 +6,7 @@ import {
   type DetectedVisualInfo,
 } from './image-detector';
 import type { MessageRequest, MessageResponse, SaveVisualPayload, VisualItem } from '../storage/types';
+import { playHapticSound, SoundPresets } from '../utils/sound';
 
 export class InspoOverlay {
   private shadowHost: HTMLElement;
@@ -178,6 +179,7 @@ export class InspoOverlay {
    * Disable Inspo on current domain permanently
    */
   private async handleDisableSite() {
+    playHapticSound(SoundPresets.deletePop);
     const domain = window.location.hostname;
     this.closePopover();
     this.hideOverlay();
@@ -396,6 +398,7 @@ export class InspoOverlay {
       });
 
       if (res.success && res.data) {
+        playHapticSound(SoundPresets.savePop);
         const item = res.data.item;
         this.setSavedState(true, item.id, item.note);
 
@@ -448,6 +451,7 @@ export class InspoOverlay {
     const note = this.noteInput.value.trim();
     if (this.currentSavedId && note !== this.currentNote) {
       this.currentNote = note;
+      playHapticSound(SoundPresets.noteSaved);
       try {
         await this.sendMessage({
           type: 'UPDATE_NOTE',
